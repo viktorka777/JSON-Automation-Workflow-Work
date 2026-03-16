@@ -83,3 +83,11 @@ OpenRouter
 LangChain nodes for AI orchestration
 
 JSON workflow configuration
+
+
+Disclaimer
+
+This project is intended for educational and demonstration purposes only.
+
+Users are responsible for complying with the terms of service of any platforms
+integrated with this workflow.
