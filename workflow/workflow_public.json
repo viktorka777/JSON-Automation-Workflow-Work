@@ -1,1 +1,2416 @@
 
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": "={{ [\"message\",\"callback_query\"] }}",
+        "additionalFields": {}
+      },
+      "id": "f53f6eaa-7a56-4061-a657-bcbaa99d1608",
+      "name": "START: One Trigger for All",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -336,
+        688
+      ],
+      "webhookId": "YOUR_WEBHOOK_ID",
+      "credentials": {
+        "telegramApi": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "telegram API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "check-message-text",
+              "leftValue": "={{ $json.message?.text }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "00db6cb1-3792-456b-876b-08b749ed0fc4",
+      "name": "IF: New Search Request?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -48,
+        688
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "check-apply-callback",
+              "leftValue": "={{ $json.callback_query?.data?.startsWith('apply_') ?? false }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "9f959654-2a96-4463-9ab4-e6d273249750",
+      "name": "IF: Apply Button Clicked?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        464,
+        880
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_SPREADSHEET_ID",
+          "mode": "id",
+          "cachedResultUrl": ""
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Profiles",
+          "cachedResultUrl": ""
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "TelegramUserID",
+              "lookupValue": "={{ $json.telegramId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8c3eda4b-d8a4-41f8-99b7-66e9efdedc11",
+      "name": "1.0 Get User Profile",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [
+        880,
+        624
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "googleSheetsOAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "set-query-field",
+              "name": "query",
+              "value": "={{ $('START: One Trigger for All').item.json.message.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "bd503149-59f6-4862-8489-3d837e6f1a1a",
+      "name": "1.0a Set Query",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [
+        1168,
+        624
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "a2643b8d-7c32-4cff-a742-1750545c322c",
+      "name": "Start Parallel Search",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1392,
+        624
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "if (!$json.callback_query?.data) {\n  throw new Error('❌ Очікуваний формат callback_query.data відсутній.');\n}\n\nconst parts = $json.callback_query.data.split('_');\n\nconst output = {\n  jobId: parts.slice(1).join('_'),\n  chatId: $json.callback_query.message.chat.id\n};\n\nreturn output;\n"
+      },
+      "id": "2d1a2cb5-8581-4980-aaa7-6e5bef731319",
+      "name": "2.1 Parse Callback Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        784,
+        944
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_SPREADSHEET_URL",
+          "mode": "url",
+          "cachedResultUrl": ""
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Profiles",
+          "cachedResultUrl": ""
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "TelegramUserID",
+              "lookupValue": "={{ $json.chatId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "9bcc8780-5885-4bde-90bf-8f9f15ecdd60",
+      "name": "2.2 Get User Profile",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [
+        1072,
+        1072
+      ],
+      "retryOnFail": true,
+      "waitBetweenTries": 3000,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "googleSheetsOAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Role: Jsi zkušený kariérní poradce. Tvým úkolem je napsat krátký a přesvědčivý motivační dopis.\n\nÚkol: Napiš motivační dopis mým jménem na základě níže uvedených informací.\n\nDODRŽUJ TATO PRAVIDLA PŘESNĚ:\n1. **ZÁKAZ FORMALIT:** V žádném případě nezačínej dopis kontaktními údaji, adresou, datem nebo adresou firmy. Vůbec je do textu nepřidávej. Začni rovnou oslovením, například \"Dobrý den,\".\n2. **Styl:** Piš přirozeně, sebevědomě a neformálně. Jako bys psal email kolegovi, kterého si vážíš. Vyhni se klišé.\n3. **Struktura:** Nejprve zmiň pozici. Poté stručně propoj mé dovednosti s požadavky. Ukonči to jasnou výzvou ke schůzce.\n4. **Formát:** Pouze text dopisu, bez jakéhokoliv záhlaví.\n\nVstupní data:\nMoje jméno: {{ $('2.2 Get User Profile').item.json.FirstName }} {{ $('2.2 Get User Profile').item.json.LastName }}\nMůj profil: {{ $('2.2 Get User Profile').item.json.Summary }}\nMoje dovednosti: {{ $('2.2 Get User Profile').item.json.KeySkills }}\n\nInformace o pozici:\nPozice: {{ $json.position }}\nFirma: {{ $json.company }}\nPopis pozice: {{ $json.descriptionText }}\n\n---\nPŘÍKLAD, JAK MÁ VÝSTUP VYPADAT (použij tento styl):\n\nDobrý den,\n\npíšu ohledně pozice Programátor PLC. Váš inzerát mě okamžitě zaujal, protože přesně to je oblast, která mě baví.\n\nV popisu hledáte někoho se zkušenostmi s PLC a HMI, což sedí na můj profil. Během studia i na vlastních projektech jsem se věnoval přesně těmto technologiím a rád bych své znalosti využil u vás. Jsem zvyklý pracovat samostatně a nebojím se zodpovědnosti.\n\nPokud vás můj profil zaujal, rád se zastavím na pohovor a probereme vše osobně.\n\nS pozdravem,\n[Jméno Příjmení]\n---",
+        "options": {}
+      },
+      "id": "e47134d7-7c8f-4cbe-870a-f028f493326a",
+      "name": "2.5 Generate Cover Letter",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        2304,
+        992
+      ]
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-4o-mini",
+        "options": {}
+      },
+      "id": "d78f3090-5574-4328-91c5-2927921b4686",
+      "name": "OpenRouter Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        2384,
+        1200
+      ],
+      "credentials": {
+        "openRouterApi": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "openRouter API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// FIX: прибрано зламаний фільтр по TelegramUserID\n// Start Parallel Search передає тільки { query }, тому просто пропускаємо всі елементи далі\nreturn items;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1632,
+        624
+      ],
+      "id": "2e5ed785-39fc-4441-a3a6-8d9344fbc194",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "resource": "Actors",
+        "operation": "Run actor synchronously with input and get dataset items",
+        "actorId": {
+          "__rl": true,
+          "value": "eMFRv27jexxAL5QHd",
+          "mode": "list",
+          "cachedResultName": "jobsnew",
+          "cachedResultUrl": ""
+        },
+        "timeout": 120,
+        "memory": 4096,
+        "maxItems": 60,
+        "build": "",
+        "webhooks": "",
+        "fields": "",
+        "omit": "",
+        "unwind": "",
+        "flatten": "",
+        "useCustomBody": true,
+        "customBody": "={\n  \"queries\": [\n    \"{{ $json.query }}\"\n  ]\n}\n",
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-apify.apify",
+      "typeVersion": 1,
+      "position": [
+        1824,
+        448
+      ],
+      "id": "eeaf2467-3f3c-40a0-94ee-b538a864875e",
+      "name": "1.1 Search Jobs.cz",
+      "credentials": {
+        "apifyApi": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "apify API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_SPREADSHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Job",
+          "cachedResultUrl": ""
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1412601576,
+          "mode": "list",
+          "cachedResultName": "Applications",
+          "cachedResultUrl": ""
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "shortId",
+              "lookupValue": "={{ $json.jobId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        1072,
+        1280
+      ],
+      "id": "5fcf0189-e75d-4635-a1e0-0cc00b55badc",
+      "name": "Get Job by ID",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "googleSheetsOAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1248,
+        1184
+      ],
+      "id": "23ef89f6-f2b8-4f7d-ad57-4fb0a88c722e",
+      "name": "Merge Job and Profile"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "id": "7696da5d-438f-4f99-8345-6abc16289875",
+      "name": "Add ChatID",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1328,
+        960
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6742b9a3-ad92-4826-b22a-b79f7790b96d",
+              "name": "telegramId",
+              "value": "={{ $json.message?.chat?.id || $json.callback_query?.message?.chat?.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        528,
+        400
+      ],
+      "id": "f87b79a9-0f71-481f-9fa7-56c176e89acc",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_SPREADSHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Job",
+          "cachedResultUrl": ""
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1412601576,
+          "mode": "list",
+          "cachedResultName": "Applications",
+          "cachedResultUrl": ""
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Applied At": "={{ $now }}",
+            "Link": "={{ $('Get Job by ID').item.json.Link }}"
+          },
+          "matchingColumns": [
+            "Link"
+          ],
+          "schema": [
+            {
+              "id": "shortId",
+              "displayName": "shortId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "company",
+              "displayName": "company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "location",
+              "displayName": "location",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "salary",
+              "displayName": "salary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Link",
+              "displayName": "Link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Applied At",
+              "displayName": "Applied At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        4304,
+        1040
+      ],
+      "id": "ff660b03-1c9d-4cbe-a948-871ccd70e12f",
+      "name": "Update Status After Puppeteer",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "googleSheetsOAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('2.2 Get User Profile').item.json.TelegramUserID }}",
+        "text": "=Надійся, що візьмуть ✅ Відгук на вакансію надіслано!\n{{ $('Get Job by ID').item.json.company }}\n{{ $('Get Job by ID').item.json.location }}\n{{ $('Get Job by ID').item.json.title }}\n📎 {{ $('Get Job by ID').item.json.Link }}\n",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        4512,
+        992
+      ],
+      "id": "1fd9b9b3-91b9-431f-95fd-20cd8fcf6cee",
+      "name": "Confirm After Puppeteer",
+      "alwaysOutputData": true,
+      "credentials": {
+        "telegramApi": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "telegram API"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2192,
+        592
+      ],
+      "id": "0ebec169-15ea-49ad-ab7e-ad6ab3f1db18",
+      "name": "Merge4",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "resource": "Actors",
+        "operation": "Run actor synchronously with input and get dataset items",
+        "actorId": {
+          "__rl": true,
+          "value": "egjFUoHcaELyIbde5",
+          "mode": "list",
+          "cachedResultName": "fill-form-jobs-cz",
+          "cachedResultUrl": ""
+        },
+        "timeout": 240,
+        "memory": 4096,
+        "useCustomBody": true,
+        "customBody": "={\n  \"jobUrl\": \"{{ $('Prepare Form Data1').item.json.jobUrl }}\",\n  \"firstName\": \"{{ $('Prepare Form Data1').item.json.FirstName }}\",\n  \"lastName\": \"{{ $('Prepare Form Data1').item.json.LastName }}\",\n  \"email\": \"{{ $('Prepare Form Data1').item.json.Email }}\",\n  \"cvFileUrl\": \"https://drive.google.com/uc?id={{ $('HTTP Request - Resume').item.json.webViewLink.split('/d/')[1].split('/')[0] }}&export=download\",\n  \"coverLetter\": {{ JSON.stringify($('Prepare Form Data1').item.json.output) }},\n  \"certificates\": [\n    \"https://drive.google.com/uc?id={{ $('HTTP Request - Cert1').item.json.webViewLink.split('/d/')[1].split('/')[0] }}&export=download\",\n    \"https://drive.google.com/uc?id={{ $('HTTP Request - Cert2').item.json.webViewLink.split('/d/')[1].split('/')[0] }}&export=download\",\n    \"https://drive.google.com/uc?id={{ $('HTTP Request - Cert3').item.json.webViewLink.split('/d/')[1].split('/')[0] }}&export=download\"\n  ]\n}\n",
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-apify.apify",
+      "typeVersion": 1,
+      "position": [
+        4048,
+        1232
+      ],
+      "id": "594e6bd5-8b8f-4db3-a98f-d2774e14887b",
+      "name": "Jobs.cz fill form",
+      "credentials": {
+        "apifyApi": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "apify API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Get Job by ID').item.json.Source }}",
+                    "rightValue": "Jobs.cz",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "switch-jobs-cz"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "switch-prace-cz",
+                    "leftValue": "={{ $('Get Job by ID').item.json.Source }}",
+                    "rightValue": "prace.cz",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        3840,
+        1072
+      ],
+      "id": "1f3cce41-5c5b-4654-b65c-534929a2e001",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "resource": "Actors",
+        "operation": "Run actor synchronously with input and get dataset items",
+        "actorId": {
+          "__rl": true,
+          "value": "NhBwmeS0OJQ4hv8wQ",
+          "mode": "list",
+          "cachedResultName": "url-for-ai-data-jobs-cz",
+          "cachedResultUrl": ""
+        },
+        "timeout": 120,
+        "memory": 4096,
+        "useCustomBody": true,
+        "customBody": "={\n  \"startUrls\": [\n    {\n      \"url\": \"{{ $('Merge Job and Profile').item.json.Link }}\"\n    }\n  ]\n}",
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-apify.apify",
+      "typeVersion": 1,
+      "position": [
+        1680,
+        1232
+      ],
+      "id": "9bc62177-e9ac-4cfd-b31a-111d30575c44",
+      "name": "url for ai jobs.cz",
+      "credentials": {
+        "apifyApi": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "apify API"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Get Job by ID').item.json.Source }}",
+                    "rightValue": "Jobs.cz",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "switch1-jobs-cz"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "switch1-prace-cz",
+                    "leftValue": "={{ $('Get Job by ID').item.json.Source }}",
+                    "rightValue": "prace.cz",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1504,
+        960
+      ],
+      "id": "d717da83-cf2e-4691-9a49-126a233a8eb7",
+      "name": "Switch1"
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => {\n  const raw = item.json.summary ?? '';\n\n  const text = raw\n    .replace(/<[^>]*>/g, '')\n    .replace(/&nbsp;/g, ' ')\n    .replace(/&[a-z]+;/gi, '')\n    .replace(/\\s+\\n/g, '\\n')\n    .replace(/\\n{2,}/g, '\\n')\n    .trim();\n\n  return {\n    json: {\n      ...item.json,\n      descriptionText: text,\n    }\n  };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1920,
+        1232
+      ],
+      "id": "f98584c1-c87d-4bdb-b053-b7a0e944772b",
+      "name": "actors_data_convert_jobs.cz"
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => {\n  const rawHtml = item.json.summary ?? '';\n\n  const descriptionText = rawHtml\n    .replace(/<[^>]*>/g, ' ')\n    .replace(/&nbsp;/g, ' ')\n    .replace(/&[a-z]+;/gi, ' ')\n    .replace(/\\s+/g, ' ')\n    .trim();\n\n  return {\n    json: {\n      position: item.json.position ?? null,\n      company: item.json.company ?? null,\n      location: item.json.location ?? null,\n      salary: item.json.salary ?? null,\n      url: item.json.url ?? null,\n      summary: item.json.summary ?? null,\n      descriptionText,\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1920,
+        992
+      ],
+      "id": "66e367e9-fed4-447e-b567-b2ccfc064564",
+      "name": "actors_data_convert_prace.cz"
+    },
+    {
+      "parameters": {
+        "jsCode": "// --- CRC32 ---\nconst makeCRCTable = () => {\n  let c;\n  const crcTable = [];\n  for (let n = 0; n < 256; n++) {\n    c = n;\n    for (let k = 0; k < 8; k++) {\n      c = ((c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1));\n    }\n    crcTable[n] = c;\n  }\n  return crcTable;\n};\n\nconst crc32 = (str) => {\n  const crcTable = makeCRCTable();\n  let crc = 0 ^ (-1);\n  for (let i = 0; i < str.length; i++) {\n    crc = (crc >>> 8) ^ crcTable[(crc ^ str.charCodeAt(i)) & 0xFF];\n  }\n  return (crc ^ (-1)) >>> 0;\n};\n\nconst cleanField = (value) => {\n  if (!value) return value;\n  return value\n    .split('\\n')\n    .map(x => x.trim())\n    .filter((v, i, a) => a && a.indexOf(v) === i)\n    .join(' ');\n};\n\nconst output = [];\n\nfor (const item of items) {\n  const originalUrl = item.json.url;\n  if (!originalUrl) continue;\n\n  const cleanedUrl = originalUrl.split('?')[0];\n  const hash = crc32(cleanedUrl);\n  const shortId = 'job_' + hash.toString(16);\n\n  output.push({\n    json: {\n      ...item.json,\n      company: cleanField(item.json.company),\n      location: cleanField(item.json.location),\n      shortId,\n      source: 'Jobs.cz'\n    }\n  });\n}\n\nreturn output;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1968,
+        448
+      ],
+      "id": "3fabe9cc-ab1b-4d5f-9065-152caf8c0644",
+      "name": "Jobs.cz"
+    },
+    {
+      "parameters": {
+        "url": "=https://www.googleapis.com/drive/v3/files/{{ $('Merge Job and Profile').item.json.CV_FileID }}?fields=webViewLink",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2832,
+        1072
+      ],
+      "id": "96be1994-1230-4ed2-b85e-65900602af08",
+      "name": "HTTP Request - Resume",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "googleDriveOAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://www.googleapis.com/drive/v3/files/{{ $('Merge Job and Profile').item.json.certificate_1 }}?fields=webViewLink",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3040,
+        1072
+      ],
+      "id": "79b8a8da-bc9d-4d7c-99c0-83386d5627f7",
+      "name": "HTTP Request - Cert1",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "googleDriveOAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://www.googleapis.com/drive/v3/files/{{ $('Merge Job and Profile').item.json.certificate_2 }}?fields=webViewLink",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3248,
+        1072
+      ],
+      "id": "5da957e4-6c13-49cc-83b9-aa9dbf877d26",
+      "name": "HTTP Request - Cert2",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "googleDriveOAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://www.googleapis.com/drive/v3/files/{{ $('Merge Job and Profile').item.json.certificate_3 }}?fields=webViewLink",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3472,
+        1072
+      ],
+      "id": "52cf5b3b-8292-4743-a282-3504847f5460",
+      "name": "HTTP Request - Cert3",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "googleDriveOAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fd5cee3c-2e81-442b-99e7-b19650d30cd6",
+              "name": "FirstName",
+              "value": "={{ $('2.2 Get User Profile').item.json.FirstName }}",
+              "type": "string"
+            },
+            {
+              "id": "15de3627-7eb1-430f-9ffd-cc6374932e45",
+              "name": "LastName",
+              "value": "={{ $('2.2 Get User Profile').item.json.LastName }}",
+              "type": "string"
+            },
+            {
+              "id": "2fcdb406-69d0-4cc2-8429-df1c0983734c",
+              "name": "Email",
+              "value": "={{ $('2.2 Get User Profile').item.json.Email }}",
+              "type": "string"
+            },
+            {
+              "id": "683e09d8-a4ee-4419-b014-656e10e1f9ba",
+              "name": "Phone",
+              "value": "={{ $('2.2 Get User Profile').item.json.Phone }}",
+              "type": "string"
+            },
+            {
+              "id": "7a6a4d72-d44a-4cd1-891a-7b94c7cc244b",
+              "name": "coverLetter",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            },
+            {
+              "id": "1a162d05-0335-4129-b2cb-710366171762",
+              "name": "jobUrl",
+              "value": "={{ $('Get Job by ID').item.json.Link }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2592,
+        1072
+      ],
+      "id": "127fedc9-8d5a-4d37-a30b-d36e80c0684f",
+      "name": "Prepare Form Data1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "filter-not-applied",
+              "leftValue": "={{ $json['Applied At'] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        2832,
+        480
+      ],
+      "id": "840df6b3-90d0-4bae-aecd-d0cc6768dd13",
+      "name": "Filter"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "check-description",
+              "leftValue": "={{ $json.descriptionText !== undefined && $json.descriptionText.trim() !== '' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2080,
+        1024
+      ],
+      "id": "502a910d-ac3a-4205-bd4b-963fd72ec180",
+      "name": "Has descriptionText?"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('2.2 Get User Profile').item.json.TelegramUserID }}\n",
+        "text": "=❗ Автоматично заповнити заявку не вдалося.\n\nЦя вакансія перенаправляє на зовнішній сайт або має нестандартну структуру.\n\n🔗 [Перейти до вакансії]({{ $('Get Job by ID').item.json.Link }})\n\n📍 Джерело: {{ $('Get Job by ID').item.json.Source }}\n\n📌 Будь ласка, надішліть заявку вручну.",
+        "additionalFields": {}
+      },
+      "id": "b947cd64-e353-454e-b2ec-8ceba0bbf20c",
+      "name": "Send Manual Fill Warning",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2192,
+        1312
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "telegram API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('START: One Trigger for All').item.json.message.chat.id }}",
+        "text": "🔍 На жаль, за вашим запитом не знайдено нових вакансій. Спробуйте інший запит або перевірте пізніше.",
+        "additionalFields": {}
+      },
+      "id": "ef80d06d-1e92-4907-8378-b7e572e1308a",
+      "name": "No Jobs Found Message2",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        3584,
+        768
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "telegram API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "check-applied-at-empty",
+              "leftValue": "={{ $json['Applied At'] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "b09b65a0-ef1c-461a-bd99-acf9c861dd51",
+      "name": "IF: Is New?3",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3200,
+        640
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_SPREADSHEET_URL",
+          "mode": "url",
+          "cachedResultUrl": ""
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1412601576,
+          "mode": "list",
+          "cachedResultName": "Applications",
+          "cachedResultUrl": ""
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "shortId",
+              "fieldValue": "={{ $json.shortId }}"
+            },
+            {
+              "fieldId": "ChatID",
+              "fieldValue": "={{ $('1.0 Get User Profile').item.json.ChatID }}"
+            },
+            {
+              "fieldId": "title",
+              "fieldValue": "={{ $json.title }}"
+            },
+            {
+              "fieldId": "Link",
+              "fieldValue": "={{ $json.url }}"
+            },
+            {
+              "fieldId": "Source",
+              "fieldValue": "={{ $json.source }}"
+            },
+            {
+              "fieldId": "Status",
+              "fieldValue": "new"
+            },
+            {
+              "fieldId": "Timestamp",
+              "fieldValue": "={{ $now }}"
+            },
+            {
+              "fieldId": "Applied At",
+              "fieldValue": ""
+            },
+            {
+              "fieldId": "location",
+              "fieldValue": "={{ $json.location }}"
+            },
+            {
+              "fieldId": "company",
+              "fieldValue": "={{ $json.company }}"
+            },
+            {
+              "fieldId": "salary",
+              "fieldValue": "={{ $json.salary }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e84d4c2f-0507-4f95-a7aa-e7c38d4bc191",
+      "name": "1.1c Log Proposed2",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [
+        3008,
+        640
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "googleSheetsOAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "advanced": true,
+        "mergeByFields": {
+          "values": [
+            {
+              "field1": "shortId",
+              "field2": "shortId"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2512,
+        640
+      ],
+      "id": "ef07d75a-e9b8-4a67-9806-d2c1291f13a6",
+      "name": "Merge6",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('START: One Trigger for All').item.json.message.chat.id }}",
+        "text": "=*{{ $json.title.replace(/[\\\\_*[\\]()~>#+=|{}.!-]/g, '\\\\$&') }}*\n{{ $json.company.replace(/[\\\\_*[\\]()~>#+=|{}.!-]/g, '\\\\$&') }}\n📍 {{ $json.location.replace(/[\\\\_*[\\]()~>#+=|{}.!-]/g, '\\\\$&') }}\n💰 {{ ($json.salary || 'Nezadáno').replace(/[\\\\_*[\\]()~>#+=|{}.!-]/g, '\\\\$&') }}\n👉 [Перейти до вакансії]({{ $json.Link.replace(/[()\\\\.]/g, '\\\\$&') }})\n👁 Джерело: {{ $json.Source.replace(/[\\\\_*[\\]()~>#+=|{}.!-]/g, '\\\\$&') }}\n",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "=📨 Відгукнись",
+                    "additionalFields": {
+                      "callback_data": "=apply_{{ $json.shortId }}"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {
+          "parse_mode": "MarkdownV2"
+        }
+      },
+      "id": "50c3e528-8ac9-4361-937d-1c608fa83585",
+      "name": "1.4 Send Jobs to Telegram3",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        3504,
+        512
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "telegram API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_SPREADSHEET_URL",
+          "mode": "url",
+          "cachedResultUrl": ""
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1412601576,
+          "mode": "list",
+          "cachedResultName": "Applications",
+          "cachedResultUrl": ""
+        },
+        "options": {}
+      },
+      "id": "6f67aec3-a6ea-4276-abb0-3730eed68af3",
+      "name": "1.1b Check for Duplicates3",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [
+        2368,
+        832
+      ],
+      "alwaysOutputData": true,
+      "executeOnce": false,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "googleSheetsOAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "compare": "selectedFields",
+        "fieldsToCompare": "shortId",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.removeDuplicates",
+      "typeVersion": 2,
+      "position": [
+        2688,
+        640
+      ],
+      "id": "59eb0abd-71d0-4f09-b215-ffbdfe9f23b5",
+      "name": "Remove Duplicates1"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_SPREADSHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Job",
+          "cachedResultUrl": ""
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1412601576,
+          "mode": "list",
+          "cachedResultName": "Applications",
+          "cachedResultUrl": ""
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "shortId": "={{ $json.shortId }}",
+            "ChatID": "={{ $('1.0 Get User Profile').item.json.ChatID }}",
+            "title": "={{ $json.title }}",
+            "company": "={{ $json.company }}",
+            "location": "={{ $json.location }}",
+            "salary": "={{ $json.salary }}",
+            "Link": "={{ $json.url }}",
+            "Source": "={{ $json.source }}"
+          },
+          "matchingColumns": [
+            "shortId"
+          ],
+          "schema": [
+            {
+              "id": "shortId",
+              "displayName": "shortId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ChatID",
+              "displayName": "ChatID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company",
+              "displayName": "company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "location",
+              "displayName": "location",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "salary",
+              "displayName": "salary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Link",
+              "displayName": "Link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Source",
+              "displayName": "Source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        2208,
+        832
+      ],
+      "id": "4ed54e2e-1f9d-4299-9393-f48e5012d40a",
+      "name": "Append or update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "googleSheetsOAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "Actors",
+        "operation": "Run actor synchronously with input and get dataset items",
+        "actorId": {
+          "__rl": true,
+          "value": "PMuB8f74cwxuYnoR8",
+          "mode": "list",
+          "cachedResultName": "prace-cz",
+          "cachedResultUrl": ""
+        },
+        "timeout": 120,
+        "memory": 4096,
+        "maxItems": 60,
+        "useCustomBody": true,
+        "customBody": "={\n  \"queries\": [\n    \"{{ $json.query }}\"\n  ]\n}\n",
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-apify.apify",
+      "typeVersion": 1,
+      "position": [
+        1792,
+        768
+      ],
+      "id": "4b88a3b8-d8c1-47e7-965b-6c95efe3674c",
+      "name": "1.1 Search prace.cz",
+      "credentials": {
+        "apifyApi": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "apify API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "Actors",
+        "operation": "Run actor synchronously with input and get dataset items",
+        "actorId": {
+          "__rl": true,
+          "value": "YvRy0wtx2e9LtfBwL",
+          "mode": "list",
+          "cachedResultName": "url-for-ai-prace-cz",
+          "cachedResultUrl": ""
+        },
+        "timeout": 120,
+        "memory": 4096,
+        "useCustomBody": true,
+        "customBody": "={\n  \"startUrls\": [\n    {\n      \"url\": \"{{ $('Merge Job and Profile').item.json.Link }}\"\n    }\n  ]\n}",
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-apify.apify",
+      "typeVersion": 1,
+      "position": [
+        1728,
+        992
+      ],
+      "id": "3ecb53a4-9433-4bd5-a870-9141ebd84ab1",
+      "name": "url for ai prace.cz",
+      "credentials": {
+        "apifyApi": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "apify API"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// --- CRC32 ---\nconst makeCRCTable = () => {\n  let c;\n  const crcTable = [];\n  for (let n = 0; n < 256; n++) {\n    c = n;\n    for (let k = 0; k < 8; k++) {\n      c = ((c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1));\n    }\n    crcTable[n] = c;\n  }\n  return crcTable;\n};\n\nconst crc32 = (str) => {\n  if (!str) return 0;\n  const crcTable = makeCRCTable();\n  let crc = 0 ^ (-1);\n  for (let i = 0; i < str.length; i++) {\n    crc = (crc >>> 8) ^ crcTable[(crc ^ str.charCodeAt(i)) & 0xFF];\n  }\n  return (crc ^ (-1)) >>> 0;\n};\n\nconst cleanField = (value) => {\n  if (!value) return value;\n  return value\n    .split('\\n')\n    .map(x => x.trim())\n    .filter((v, i, a) => a && a.indexOf(v) === i)\n    .join(' ');\n};\n\nconst output = [];\n\nfor (const item of items) {\n  const originalUrl = item.json.url;\n  let shortId = null;\n\n  if (originalUrl) {\n    const cleanedUrl = originalUrl.split('?')[0];\n    const hash = crc32(cleanedUrl);\n    shortId = 'job_' + hash.toString(16);\n  }\n\n  output.push({\n    json: {\n      ...item.json,\n      company: cleanField(item.json.company),\n      location: cleanField(item.json.location),\n      shortId,\n      source: 'prace.cz'\n    }\n  });\n}\n\nreturn output;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1984,
+        784
+      ],
+      "id": "480ac8bd-e65d-4ed7-bbf2-5b5b9057f3ec",
+      "name": "Prace.cz"
+    },
+    {
+      "parameters": {
+        "resource": "Actors",
+        "operation": "Run actor synchronously with input and get dataset items",
+        "actorId": {
+          "__rl": true,
+          "value": "aVEjqWAi8YawOUA7b",
+          "mode": "list",
+          "cachedResultName": "fill-form-for-prace-cz",
+          "cachedResultUrl": ""
+        },
+        "timeout": 240,
+        "memory": 4096,
+        "useCustomBody": true,
+        "customBody": "={\n  \"jobUrl\": \"{{ $('Prepare Form Data1').item.json.jobUrl }}\",\n  \"firstName\": \"{{ $('Prepare Form Data1').item.json.FirstName }}\",\n  \"lastName\": \"{{ $('Prepare Form Data1').item.json.LastName }}\",\n  \"email\": \"{{ $('Prepare Form Data1').item.json.Email }}\",\n  \"cvFileUrl\": \"https://drive.google.com/uc?id={{ $('HTTP Request - Resume').item.json.webViewLink.split('/d/')[1].split('/')[0] }}&export=download\",\n  \"coverLetter\": {{ JSON.stringify($('Prepare Form Data1').item.json.output) }},\n  \"certificates\": [\n    \"https://drive.google.com/uc?id={{ $('HTTP Request - Cert1').item.json.webViewLink.split('/d/')[1].split('/')[0] }}&export=download\",\n    \"https://drive.google.com/uc?id={{ $('HTTP Request - Cert2').item.json.webViewLink.split('/d/')[1].split('/')[0] }}&export=download\",\n    \"https://drive.google.com/uc?id={{ $('HTTP Request - Cert3').item.json.webViewLink.split('/d/')[1].split('/')[0] }}&export=download\"\n  ]\n}\n",
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-apify.apify",
+      "typeVersion": 1,
+      "position": [
+        4064,
+        1040
+      ],
+      "id": "3a73f9e3-ac00-4248-bcab-53e1a77e0560",
+      "name": "prace.cz fiil form",
+      "credentials": {
+        "apifyApi": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "apify API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sseEndpoint": "http://app.mcp-as-a-service.com:20710/sse",
+        "authentication": "bearerAuth"
+      },
+      "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
+      "typeVersion": 1,
+      "position": [
+        2656,
+        2176
+      ],
+      "id": "3f1fb9bf-a747-4517-a5b8-b1dc256933fd",
+      "name": "MCP Client",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "httpBearerAuth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-4o-mini",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        2432,
+        2176
+      ],
+      "id": "727a29bb-5ecc-47bb-92aa-5c656afdf3a8",
+      "name": "OpenRouter Chat Model2",
+      "credentials": {
+        "openRouterApi": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "openRouter API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sseEndpoint": "http://app.mcp-as-a-service.com:20710/sse",
+        "authentication": "bearerAuth"
+      },
+      "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
+      "typeVersion": 1,
+      "position": [
+        3072,
+        2224
+      ],
+      "id": "11c57bd6-7c66-4966-8b8e-5853be319887",
+      "name": "MCP Client1",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "httpBearerAuth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-4o-mini",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        2928,
+        2208
+      ],
+      "id": "29766d64-cff2-4349-aea0-625ac384a54f",
+      "name": "OpenRouter Chat Model3",
+      "credentials": {
+        "openRouterApi": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "openRouter API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sseEndpoint": "http://app.mcp-as-a-service.com:20710/sse",
+        "authentication": "bearerAuth"
+      },
+      "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
+      "typeVersion": 1,
+      "position": [
+        3504,
+        2224
+      ],
+      "id": "f70693f0-a8f5-4149-b85c-320cb04b536d",
+      "name": "MCP Client2",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "httpBearerAuth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-4o-mini",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        3280,
+        2224
+      ],
+      "id": "fc22f9ff-6ed4-44af-a2bb-cab1a1a09e47",
+      "name": "OpenRouter Chat Model4",
+      "credentials": {
+        "openRouterApi": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "openRouter API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-4o-mini",
+        "options": {
+          "maxRetries": 50
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        2176,
+        2032
+      ],
+      "id": "f494da66-150d-44d4-8892-a6447ab6cb6b",
+      "name": "OpenRouter Chat Model1",
+      "credentials": {
+        "openRouterApi": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "openRouter API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Ти — агент для подачі заявки на вакансію.\n\n🔹 Вхідні дані:\n- URL вакансії: {{ $json.url }}\n- HTML код {{ $json.body }}\n- Ім'я: {{ $('2.2 Get User Profile').item.json.FirstName }}\n- Прізвище: {{ $('2.2 Get User Profile').item.json.LastName }}\n- Email: {{ $('2.2 Get User Profile').item.json.Email }}\n- Телефон: {{ $('2.2 Get User Profile').item.json.Phone }}\n- Навички: {{ $('2.2 Get User Profile').item.json.KeySkills }}\n- CV: https://drive.google.com/uc?export=download&id={{ $('2.2 Get User Profile').item.json.CV_FileID }}\n\n---\n\n🔹 Твоя задача:\n1. Перейди на сторінку вакансії за URL.\n2. Якщо зʼявиться cookie-банер, натисни \"Přijmout\" або \"Souhlasím\".\n3. Знайди кнопку \"Mám zájem\", \"Odpovědět\" або \"Apply\", натисни її.\n4. Дочекайся появи форми.\n5. Заповни поля форми.\n6. Завантаж резюме у PDF-форматі.\n7. Постав галочки згоди, якщо є.\n8. Натисни кнопку \"Odeslat\", \"Submit\" або подібну.\n\n🔹 Завершення:\n- Якщо форму успішно надіслано: ✅ \"Форма відправлена\"\n- Якщо виникла помилка: ❌ \"Заявка не відправлена\"\n",
+        "options": {
+          "maxIterations": 50
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        2592,
+        1712
+      ],
+      "id": "dc8beaa0-6edd-4f9c-ac5f-ed6195b443d2",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "text": "=Ти — агент для подачі заявки на вакансію.\n\n🔹 Завдання:\n1. Відкрий сторінку за адресою: {{ $json['#url'] }}.\n2. Прийми cookie.\n3. Знайди і натисни кнопку для подачі заявки.\n4. Дочекайся форми.\n5. Якщо форма відкрилась — повідом ✅ Форма знайдена.\n6. Якщо ні — повідом ❌ Форма не знайдена.\n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agentTool",
+      "typeVersion": 2.2,
+      "position": [
+        2560,
+        1984
+      ],
+      "id": "d3507b75-2e84-4797-aa13-2fd04f95fc34",
+      "name": "A"
+    },
+    {
+      "parameters": {
+        "text": "=Ти — агент для заповнення форми заявки.\n\n📥 Дані:\n- Jméno: {{ $('2.2 Get User Profile').item.json.FirstName }}\n- Příjmení: {{ $('2.2 Get User Profile').item.json.LastName }}\n- Email: {{ $('2.2 Get User Profile').item.json.Email }}\n- Telefon: {{ $('2.2 Get User Profile').item.json.Phone }}\n- Навички: {{ $('2.2 Get User Profile').item.json.KeySkills }}\n\n🔹 Завдання:\n1. Введи дані у відповідні поля.\n2. Згенеруй мотиваційний лист чеською мовою (2–3 речення).\n3. Встав лист у поле \"Průvodní dopis\" або \"Motivační dopis\".\n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agentTool",
+      "typeVersion": 2.2,
+      "position": [
+        2944,
+        2000
+      ],
+      "id": "8db32cf7-bd8c-41c6-9a86-661ff3bb5a9e",
+      "name": "B"
+    },
+    {
+      "parameters": {
+        "text": "=Ти — агент для завершення заявки.\n\n📥 Дані:\n- Резюме (PDF): https://drive.google.com/uc?export=download&id={{ $('2.2 Get User Profile').item.json.CV_FileID }}\n\n🔹 Завдання:\n1. Завантаж PDF резюме у поле \"Životopis\" або \"Příloha\".\n2. Познач усі обовʼязкові чекбокси.\n3. Натисни кнопку \"Odeslat\" або \"Submit\".\n4. Якщо успішно — ✅ Успішно подано.\n5. Якщо помилка — ❌ Помилка при подачі.\n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agentTool",
+      "typeVersion": 2.2,
+      "position": [
+        3264,
+        2000
+      ],
+      "id": "0c3029a3-8a6b-4fe1-8190-73cdf0cebc9c",
+      "name": "C"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json['#url'] }}",
+        "options": {
+          "launchArguments": {
+            "args": [
+              {
+                "arg": "--no-sandbox"
+              },
+              {
+                "arg": "--disable-setuid-sandbox"
+              },
+              {
+                "arg": "--disable-dev-shm-usage"
+              },
+              {
+                "arg": "--disable-gpu"
+              },
+              {
+                "arg": "--window-size=1920,1080"
+              }
+            ]
+          },
+          "timeout": 60000,
+          "waitUntil": "domcontentloaded"
+        }
+      },
+      "type": "n8n-nodes-puppeteer.puppeteer",
+      "typeVersion": 1,
+      "position": [
+        2240,
+        1728
+      ],
+      "id": "a48d8faf-39ef-405a-9d7e-d3666caeedef",
+      "name": "Puppeteer"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "START: One Trigger for All": {
+      "main": [
+        [
+          {
+            "node": "IF: New Search Request?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: New Search Request?": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IF: Apply Button Clicked?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Apply Button Clicked?": {
+      "main": [
+        [
+          {
+            "node": "2.1 Parse Callback Data",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "1.0 Get User Profile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1.0 Get User Profile": {
+      "main": [
+        [
+          {
+            "node": "1.0a Set Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1.0a Set Query": {
+      "main": [
+        [
+          {
+            "node": "Start Parallel Search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start Parallel Search": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "1.1 Search Jobs.cz",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "1.1 Search prace.cz",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1.1 Search Jobs.cz": {
+      "main": [
+        [
+          {
+            "node": "Jobs.cz",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Jobs.cz": {
+      "main": [
+        [
+          {
+            "node": "Merge4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1.1 Search prace.cz": {
+      "main": [
+        [
+          {
+            "node": "Prace.cz",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prace.cz": {
+      "main": [
+        [
+          {
+            "node": "Merge4",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge4": {
+      "main": [
+        [
+          {
+            "node": "Merge6",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Append or update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append or update row in sheet": {
+      "main": [
+        [
+          {
+            "node": "1.1b Check for Duplicates3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1.1b Check for Duplicates3": {
+      "main": [
+        [
+          {
+            "node": "Merge6",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge6": {
+      "main": [
+        [
+          {
+            "node": "Remove Duplicates1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Remove Duplicates1": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "1.1c Log Proposed2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1.1c Log Proposed2": {
+      "main": [
+        [
+          {
+            "node": "IF: Is New?3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Is New?3": {
+      "main": [
+        [
+          {
+            "node": "1.4 Send Jobs to Telegram3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Jobs Found Message2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1.4 Send Jobs to Telegram3": {
+      "main": [
+        []
+      ]
+    },
+    "2.1 Parse Callback Data": {
+      "main": [
+        [
+          {
+            "node": "2.2 Get User Profile",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Job by ID",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Add ChatID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2.2 Get User Profile": {
+      "main": [
+        [
+          {
+            "node": "Merge Job and Profile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Job by ID": {
+      "main": [
+        [
+          {
+            "node": "Merge Job and Profile",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Job and Profile": {
+      "main": [
+        [
+          {
+            "node": "Add ChatID",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Add ChatID": {
+      "main": [
+        [
+          {
+            "node": "Switch1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch1": {
+      "main": [
+        [
+          {
+            "node": "url for ai jobs.cz",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "url for ai prace.cz",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "url for ai jobs.cz": {
+      "main": [
+        [
+          {
+            "node": "actors_data_convert_jobs.cz",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "url for ai prace.cz": {
+      "main": [
+        [
+          {
+            "node": "actors_data_convert_prace.cz",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "actors_data_convert_jobs.cz": {
+      "main": [
+        [
+          {
+            "node": "Has descriptionText?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "actors_data_convert_prace.cz": {
+      "main": [
+        [
+          {
+            "node": "Has descriptionText?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has descriptionText?": {
+      "main": [
+        [
+          {
+            "node": "2.5 Generate Cover Letter",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Manual Fill Warning",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2.5 Generate Cover Letter": {
+      "main": [
+        [
+          {
+            "node": "Prepare Form Data1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "2.5 Generate Cover Letter",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Form Data1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Resume",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Resume": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Cert1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Cert1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Cert2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Cert2": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Cert3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Cert3": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Jobs.cz fill form",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "prace.cz fiil form",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Jobs.cz fill form": {
+      "main": [
+        [
+          {
+            "node": "Update Status After Puppeteer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "prace.cz fiil form": {
+      "main": [
+        [
+          {
+            "node": "Update Status After Puppeteer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Status After Puppeteer": {
+      "main": [
+        [
+          {
+            "node": "Confirm After Puppeteer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm After Puppeteer": {
+      "main": [
+        []
+      ]
+    },
+    "Send Manual Fill Warning": {
+      "main": [
+        []
+      ]
+    },
+    "No Jobs Found Message2": {
+      "main": [
+        []
+      ]
+    },
+    "OpenRouter Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        []
+      ]
+    },
+    "OpenRouter Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "A",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MCP Client": {
+      "ai_tool": [
+        [
+          {
+            "node": "A",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "A": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "B",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MCP Client1": {
+      "ai_tool": [
+        [
+          {
+            "node": "B",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "B": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model4": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "C",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MCP Client2": {
+      "ai_tool": [
+        [
+          {
+            "node": "C",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "C": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Puppeteer": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "YOUR_VERSION_ID",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "YOUR_INSTANCE_ID"
+  },
+  "id": "YOUR_WORKFLOW_ID",
+  "tags": []
+}
